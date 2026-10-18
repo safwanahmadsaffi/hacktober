@@ -1,0 +1,52 @@
+# Render blueprint for DukaanVoice PK — the open-source AI shop register.
+#
+#   1. Push this repo to GitHub.
+#   2. In Render: New → Blueprint → point at the repo.
+#   3. (Optional) set the partner keys below in the Render dashboard.
+#
+# The app builds to a standard Next.js server; the Munshi agent + all AI routes
+# run as part of the same web service.
+
+services:
+  - type: web
+    name: dukaanvoice-pk
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # ── Optional partner upgrades (leave blank to run fully offline) ──
+      # LLM: Ollama Cloud by default (no local install on Render). Set the
+      # secret OLLAMA_API_KEY in the dashboard, or point at a local daemon.
+      - key: OLLAMA_API_URL
+        value: https://ollama.com/api/generate
+      - key: OLLAMA_API_KEY
+        sync: false
+      - key: GEMMA_MODEL_NAME
+        value: gemma4:31b-cloud
+      - key: OLLAMA_TIMEOUT_MS
+        value: "15000"
+      - key: TABPFN_API_KEY
+        sync: false
+      - key: TABPFN_MODEL_PATH
+        value: v3.5_default
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: 21m00Tcm4TlvDq8ikWAM
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+      - key: MASTRA_MODEL
+        value: ollama-cloud/gemma4:31b
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

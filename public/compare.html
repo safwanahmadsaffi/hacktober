@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DukaanVoice — Side-by-Side Compare</title>
+<style>
+  :root {
+    --bg: #FAF9F6; --surface: #FFFFFF; --ink: #24364B; --muted: #52677A;
+    --line: #D8E1E5; --accent: #409FE0; --accent-deep: #2080C8; --soft: #F1F7F8;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .75rem;
+    padding: .7rem 1rem; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 1rem; margin: 0; font-weight: 650; white-space: nowrap; }
+  header h1 span { color: var(--accent-deep); }
+  .views { display: flex; gap: .35rem; background: var(--soft); padding: .25rem; border-radius: 999px; }
+  .views button {
+    border: 0; background: transparent; color: var(--muted); font: inherit; font-size: .82rem;
+    padding: .4rem .8rem; border-radius: 999px; cursor: pointer;
+  }
+  .views button.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .views button:hover:not(.active) { color: var(--ink); }
+  label { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: .4rem; }
+  select, input[type="url"] {
+    font: inherit; font-size: .82rem; padding: .35rem .5rem; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--surface); color: var(--ink);
+  }
+  input[type="url"] { width: 300px; }
+  .hint { font-size: .72rem; color: var(--muted); margin-left: auto; }
+  main { flex: 1; display: grid; gap: .6rem; padding: .6rem; min-height: 0; }
+  main.grid-2 { grid-template-columns: 1fr 1fr; }
+  main.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .cell { display: flex; flex-direction: column; min-height: 0; min-width: 0;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .cell .bar {
+    display: flex; align-items: center; gap: .5rem; padding: .35rem .6rem;
+    background: var(--soft); border-bottom: 1px solid var(--line); font-size: .75rem;
+  }
+  .cell .bar b { font-size: .78rem; }
+  .cell .bar .url { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+  .cell .bar a, .cell .bar button {
+    margin-left: auto; color: var(--accent-deep); text-decoration: none; font-size: .72rem;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
+    padding: .15rem .45rem; cursor: pointer; white-space: nowrap;
+  }
+  .cell iframe { flex: 1; border: 0; width: 100%; background: var(--bg); }
+  .note { font-size: .72rem; color: var(--muted); padding: 0 .6rem .5rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DukaanVoice <span>side-by-side</span></h1>
+  <div class="views" role="tablist" aria-label="Compare view">
+    <button data-view="pages" class="active">Pages grid</button>
+    <button data-view="devprod">Dev vs Prod</button>
+    <button data-view="reference">Local vs Reference</button>
+  </div>
+  <label>Page
+    <select id="route">
+      <option value="/">Quick Sale</option>
+      <option value="/dashboard">Dashboard</option>
+      <option value="/products">Products</option>
+      <option value="/transactions">Transactions</option>
+      <option value="/udhaar">Udhaar Khata</option>
+      <option value="/expenses">Expenses</option>
+      <option value="/cash-closing">Cash Closing</option>
+      <option value="/reports">Reports</option>
+    </select>
+  </label>
+  <label id="refLabel" style="display:none">Reference URL
+    <input type="url" id="refUrl" value="https://dukaanvoice-ai.vercel.app" />
+  </label>
+  <button id="reloadAll" style="font-size:.78rem;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:.35rem .7rem;cursor:pointer">Reload all</button>
+  <span class="hint">If a panel stays blank, the site blocks framing — use “open ↗”.</span>
+</header>
+
+<main id="main" class="grid-4"></main>
+<div class="note" id="note"></div>
+
+<script>
+  const DEV = 'http://localhost:3000';
+  const PROD = 'http://localhost:3001';
+  const main = document.getElementById('main');
+  const routeSel = document.getElementById('route');
+  const refUrl = document.getElementById('refUrl');
+  const refLabel = document.getElementById('refLabel');
+  const note = document.getElementById('note');
+  let view = 'pages';
+
+  function cell(title, src, extraNote) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    wrap.innerHTML =
+      '<div class="bar"><b></b><span class="url"></span>' +
+      '<a target="_blank" rel="noopener">open ↗</a><button title="Reload">⟳</button></div>' +
+      (extraNote ? '<div class="note"></div>' : '') +
+      '<iframe loading="lazy" title=""></iframe>';
+    wrap.querySelector('b').textContent = title;
+    wrap.querySelector('.url').textContent = src;
+    if (extraNote) wrap.querySelector('.note').textContent = extraNote;
+    const link = wrap.querySelector('a');
+    link.href = src;
+    const frame = wrap.querySelector('iframe');
+    frame.title = title;
+    frame.src = src;
+    wrap.querySelector('button').addEventListener('click', () => { frame.src = src; });
+    return wrap;
+  }
+
+  function render() {
+    main.innerHTML = '';
+    main.className = view === 'pages' ? 'grid-4' : 'grid-2';
+    refLabel.style.display = view === 'reference' ? 'flex' : 'none';
+    const route = routeSel.value || '/';
+    const path = route === '/' ? '/' : route;
+
+    if (view === 'pages') {
+      note.textContent = 'Four areas of the dev server at once — click nav inside each panel to swap pages.';
+      ['Dashboard', 'Products', 'Cash Closing', 'Reports'].forEach((name) => {
+        const map = { Dashboard: '/dashboard', Products: '/products', 'Cash Closing': '/cash-closing', Reports: '/reports' };
+        main.appendChild(cell(name + ' (dev)', DEV + map[name]));
+      });
+    } else if (view === 'devprod') {
+      note.textContent = 'Same page: development server (:3000) on the left, production build (:3001) on the right.';
+      main.appendChild(cell('Dev — ' + route, DEV + path));
+      main.appendChild(cell('Prod — ' + route, PROD + path));
+    } else {
+      note.textContent = 'Your build (left) vs the live reference (right). If the reference panel is blank, open it directly — Vercel apps often block framing.';
+      main.appendChild(cell('Local — ' + route, DEV + path));
+      main.appendChild(cell('Reference', refUrl.value, 'Blank? Click “open ↗”.'));
+    }
+  }
+
+  document.querySelectorAll('.views button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.views button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      view = btn.dataset.view;
+      render();
+    });
+  });
+  routeSel.addEventListener('change', render);
+  refUrl.addEventListener('change', render);
+  document.getElementById('reloadAll').addEventListener('click', render);
+  render();
+</script>
+</body>
+</html>
