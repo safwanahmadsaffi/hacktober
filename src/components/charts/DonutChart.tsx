@@ -30,19 +30,16 @@ export default function DonutChart({
   const total = filled.reduce((s, d) => s + Math.max(0, d.value), 0);
   const circumference = 2 * Math.PI * RADIUS;
 
-  let offset = 0; // running dash offset, in circumference units
-  const segments = filled.map(d => {
-    const frac = total > 0 ? d.value / total : 0;
-    const seg = {
-      ...d,
-      frac,
-      // Start from the top of the ring (−90°) and advance clockwise.
-      dash: `${frac * circumference} ${circumference}`,
-      dashOffset: -offset,
-    };
-    offset += frac * circumference;
-    return seg;
-  });
+  const fractions = filled.map(d => (total > 0 ? Math.max(0, d.value) / total : 0));
+  // Prefix sums give every arc its start position, so nothing is mutated during render.
+  const starts = fractions.map((_, i) => fractions.slice(0, i).reduce((s, f) => s + f, 0));
+  const segments = filled.map((d, i) => ({
+    ...d,
+    frac: fractions[i],
+    // Start from the top of the ring (−90°) and advance clockwise.
+    dash: `${fractions[i] * circumference} ${circumference}`,
+    dashOffset: -starts[i] * circumference,
+  }));
 
   return (
     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

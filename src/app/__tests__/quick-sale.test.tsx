@@ -63,7 +63,10 @@ async function addProductToCart() {
   fireEvent.change(search, { target: { value: searchProbe } });
   const option = await screen.findByRole('option', { name: productRe }, { timeout: 5000 });
   fireEvent.click(option);
-  await screen.findByText(productRe);
+  // Scope to the cart table: the product name also appears in the search
+  // dropdown and in the bill-composition donut chart.
+  const cartTable = await screen.findByRole('table', { name: /cart items/i });
+  await within(cartTable).findByText(productRe);
 }
 
 beforeEach(() => {

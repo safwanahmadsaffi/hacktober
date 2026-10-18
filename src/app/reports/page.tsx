@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ChartBar, Package, Receipt } from '@phosphor-icons/react';
 import { useApp } from '@/lib/store';
 import { formatPKR, isRealSale, isUdhaarRepayment, todayISO } from '@/lib/financial';
-import { revenueSeries, paymentMix, moneySplit, dailySeries, useBusinessToday } from '@/lib/charts';
+import { revenueSeries, paymentMix, moneySplit, dailySeries } from '@/lib/charts';
 import ChartCard from '@/components/charts/ChartCard';
 import TrendChart from '@/components/charts/TrendChart';
 import GroupedBars from '@/components/charts/GroupedBars';
@@ -21,7 +21,6 @@ const RANGE_LABELS: Record<Range, string> = {
 export default function ReportsPage() {
   const { state } = useApp();
   const [dateRange, setDateRange] = useState<Range>('all');
-  const today = useBusinessToday();
   const [todayStr, setTodayStr] = useState<string>('');
 
   useEffect(() => {
