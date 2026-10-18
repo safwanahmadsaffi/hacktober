@@ -14,7 +14,9 @@ services:
     plan: free
     region: singapore
     branch: main
-    buildCommand: npm ci && npm run build
+    # --include=dev keeps TypeScript/Tailwind available for `next build` even
+    # when Render sets NODE_ENV=production during the build phase.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /
     autoDeploy: true
